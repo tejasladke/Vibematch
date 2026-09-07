@@ -1,10 +1,10 @@
 export interface NaviMumbaiPlace {
   id: string;
   name: string;
-  category: 'MALLS' | 'CAFES' | 'TURFS' | 'GAMING CAFES';
+  category: 'MALLS' | 'CAFES' | 'TURFS' | 'GAMING CAFES' | 'Pandals';
   area: string;
   tag: string;
-  matchedPlanCategory: 'Movie' | 'Café' | 'Turf' | 'Gaming' | 'Food' | 'Sports';
+  matchedPlanCategory: 'Movie' | 'Café' | 'Turf' | 'Gaming' | 'Food' | 'Sports' | 'Pandals';
 }
 
 export const NAVI_MUMBAI_MALLS = [
@@ -199,6 +199,58 @@ export const NAVI_MUMBAI_GAMING_CAFES = [
   'Gamescape',
   'Smaaash',
 ] as const;
+export const MUMBAI_pandals = [
+ ' 1. Lalbaugcha Raja — Lalbaug',
+ ' 2. Mumbaicha Raja (Ganesh Galli) — Lalbaug',
+ ' 3. GSB Seva Mandal Mahaganpati — King\'s Circle',
+ ' 4. Khetwadicha Ganraj — Khetwadi',
+ ' 5. Mumbaicha Maharaja — Khetwadi',
+ ' 6. Girgaoncha Raja — Girgaon',
+ ' 7. Chinchpoklicha Chintamani — Chinchpokli',
+ ' 8. Tejukayacha Raja — Lalbaug',
+ ' 9. Andhericha Raja — Andheri West',
+ ' 10. Parelcha Raja — Parel',
+ ' 11. Fortcha Icchapurti Raja — Fort',
+ ' 12. Sahyadri Krida Mandal — Chembur',
+ ' 13. Khetwadi 10th Lane Ganpati — Khetwadi',
+ ' 14. Khetwadi 11th Lane Ganpati — Khetwadi',
+ ' 15. Khetwadi 12th Lane Ganpati — Khetwadi',
+ ' 16. Khetwadi 13th Lane Ganpati — Khetwadi',
+ ' 17. Gaondevi & J.K. Building Ganesh Mandal — Girgaon',
+ ' 18. Akhil Mugbhat Ganesh Mandal — Girgaon',
+ ' 19. Khattar Galli Ganesh Mandal — Girgaon',
+ ' 20. Keshavji Naik Chawl Ganesh Mandal — Girgaon',
+ ' 21. Lalbaug Sarvajanik Utsav Mandal — Lalbaug',
+ ' 22. Ganesh Krupa Mandal — Dadar',
+ ' 23. Dadar Sarvajanik Ganeshotsav Mandal — Dadar',
+ ' 24. Naigaon Ganeshotsav Mandal — Naigaon',
+ ' 25. Parel Bhoiwada Ganesh Mandal — Parel',
+ ' 26. Lalbaug Market Ganesh Mandal — Lalbaug',
+ ' 27. Kalachowki Sarvajanik Ganeshotsav Mandal — Kalachowki',
+ ' 28. Abhyudaya Nagar Ganesh Mandal — Kalachowki',
+ ' 29. Ranjit Studio Ganesh Mandal — Dadar',
+ ' 30. Mahimcha Raja — Mahim',
+ ' 31. Bandracha Raja — Bandra',
+ ' 32. Khar Danda Ganesh Mandal — Khar',
+ ' 33. Santacruz Ganesh Mandal — Santacruz',
+ ' 34. Vile Parle Ganesh Mandal — Vile Parle',
+ ' 35. Juhu Ganesh Mandal — Juhu',
+ ' 36. Andheri Azad Nagar Ganesh Mandal — Andheri',
+ ' 37. Jogeshwari Ganesh Mandal — Jogeshwari',
+ ' 38. Goregaon Ganesh Mandal — Goregaon',
+ ' 39. Maladcha Raja — Malad',
+ ' 40. Malvani Mhada Cha Raja — Malvani',
+ ' 41. Kandivali Ganesh Mandal — Kandivali',
+ ' 42. Borivali Ganesh Mandal — Borivali',
+ ' 43. Ghatkopar Ganesh Mandal — Ghatkopar',
+ ' 44. Chemburcha Raja — Chembur',
+ ' 45. Tilak Nagar Ganesh Mandal — Chembur',
+ ' 46. Wadala Ganesh Mandal — Wadala',
+ ' 47. Sion Ganesh Mandal — Sion',
+ ' 48. Matunga Sarvajanik Ganeshotsav Mandal — Matunga',
+
+ ] as const;
+
 
 function extractArea(name: string): string {
   const lower = name.toLowerCase();

@@ -38,7 +38,7 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-// Your deployed Render backend
+// Render backend
 const SOCKET_URL = 'https://vibematch-301t.onrender.com';
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -47,7 +47,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const { token, user } = useAuth();
 
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [typingUsers, setTypingUsers] = useState<{
     [connectionId: string]: string | null;
@@ -59,7 +59,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // If user is logged out, disconnect socket
+    // No login = no socket connection
     if (!token || !user) {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -70,14 +70,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsConnected(false);
       setOnlineUserIds([]);
       setTypingUsers({});
+      setLatestMessage(null);
+      setLatestNotification(null);
+
       return;
     }
 
-    console.log('[Socket] Connecting to Render backend...');
+    console.log('[Socket] Connecting to:', SOCKET_URL);
 
-    const socketInstance = io(SOCKET_URL, {
+    const socketInstance: Socket = io(SOCKET_URL, {
       auth: {
-        token,
+        token: token,
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -89,72 +92,104 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
     socketRef.current = socketInstance;
 
-    // Connected
+    // -----------------------------
+    // CONNECT
+    // -----------------------------
+
     socketInstance.on('connect', () => {
+      console.log('[Socket] Connected:', socketInstance.id);
       setIsConnected(true);
-
-      console.log(
-        '[Socket Connected]',
-        socketInstance.id,
-        '→',
-        SOCKET_URL
-      );
     });
 
-    // Connection error
-    socketInstance.on('connect_error', (error) => {
+    // -----------------------------
+    // CONNECTION ERROR
+    // -----------------------------
+
+    socketInstance.on('connect_error', (error: Error) => {
+      console.error('[Socket] Connection error:', error.message);
       setIsConnected(false);
-
-      console.error('[Socket Connection Error]', error.message);
     });
 
-    // Disconnected
-    socketInstance.on('disconnect', (reason) => {
+    // -----------------------------
+    // DISCONNECT
+    // -----------------------------
+
+    socketInstance.on('disconnect', (reason: string) => {
+      console.log('[Socket] Disconnected:', reason);
       setIsConnected(false);
-
-      console.log('[Socket Disconnected]', reason);
     });
 
-    // Online users
+    // -----------------------------
+    // ONLINE USERS
+    // -----------------------------
+
     socketInstance.on('online_users', (userIds: string[]) => {
-      setOnlineUserIds(userIds || []);
+      setOnlineUserIds(Array.isArray(userIds) ? userIds : []);
     });
 
-    // New message
-    socketInstance.on('new_message', (message: Message) => {
-      console.log('[Socket] New message received:', message);
+    // -----------------------------
+    // NEW MESSAGE
+    // -----------------------------
 
+    socketInstance.on('new_message', (message: Message) => {
+      console.log('[Socket] New message:', message);
       setLatestMessage(message);
     });
 
-    // New notification
-    socketInstance.on('new_notification', (notif: Notification) => {
-      console.log('[Socket] New notification:', notif);
+    // -----------------------------
+    // NEW NOTIFICATION
+    // -----------------------------
 
-      setLatestNotification(notif);
+    socketInstance.on('new_notification', (notification: Notification) => {
+      console.log('[Socket] New notification:', notification);
+      setLatestNotification(notification);
     });
 
-    // Typing indicator
+    // -----------------------------
+    // TYPING
+    // -----------------------------
+
     socketInstance.on(
       'user_typing',
-      ({ connectionId, name, isTyping }: TypingInfo) => {
-        setTypingUsers((prev) => ({
-          ...prev,
-          [connectionId]: isTyping ? name || 'Someone' : null,
+      (data: TypingInfo) => {
+        const {
+          connectionId,
+          name,
+          isTyping,
+        } = data;
+
+        setTypingUsers((previous) => ({
+          ...previous,
+          [connectionId]: isTyping
+            ? name || 'Someone'
+            : null,
         }));
       }
     );
 
-    // Socket error from backend
-    socketInstance.on('error', (error) => {
-      console.error('[Socket Server Error]', error);
+    // -----------------------------
+    // SERVER ERROR
+    // -----------------------------
+
+    socketInstance.on('error', (error: { message?: string } | Error) => {
+      if (error instanceof Error) {
+        console.error('[Socket] Server error:', error.message);
+      } else {
+        console.error(
+          '[Socket] Server error:',
+          error?.message || error
+        );
+      }
     });
 
     setSocket(socketInstance);
 
-    // Cleanup
+    // -----------------------------
+    // CLEANUP
+    // -----------------------------
+
     return () => {
-      console.log('[Socket] Cleaning up connection...');
+      console.log('[Socket] Cleaning up');
 
       socketInstance.removeAllListeners();
       socketInstance.disconnect();
@@ -167,76 +202,140 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [token, user]);
 
-  // Join private chat room
+  // -----------------------------
+  // JOIN CHAT ROOM
+  // -----------------------------
+
   const joinRoom = useCallback((connectionId: string) => {
-    if (socketRef.current?.connected) {
-      console.log('[Socket] Joining room:', connectionId);
+    const currentSocket = socketRef.current;
 
-      socketRef.current.emit('join_connection', {
-        connectionId,
-      });
-    } else {
-      console.warn('[Socket] Cannot join room - socket not connected');
+    if (!currentSocket || !currentSocket.connected) {
+      console.warn(
+        '[Socket] Cannot join room - socket not connected'
+      );
+      return;
     }
+
+    console.log(
+      '[Socket] Joining connection:',
+      connectionId
+    );
+
+    currentSocket.emit('join_connection', {
+      connectionId,
+    });
   }, []);
 
-  // Leave private chat room
+  // -----------------------------
+  // LEAVE CHAT ROOM
+  // -----------------------------
+
   const leaveRoom = useCallback((connectionId: string) => {
-    if (socketRef.current?.connected) {
-      console.log('[Socket] Leaving room:', connectionId);
+    const currentSocket = socketRef.current;
 
-      socketRef.current.emit('leave_connection', {
-        connectionId,
-      });
+    if (!currentSocket || !currentSocket.connected) {
+      return;
     }
+
+    console.log(
+      '[Socket] Leaving connection:',
+      connectionId
+    );
+
+    currentSocket.emit('leave_connection', {
+      connectionId,
+    });
   }, []);
 
-  // Start typing
-  const emitTypingStart = useCallback((connectionId: string) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('typing_start', {
-        connectionId,
-      });
-    }
-  }, []);
+  // -----------------------------
+  // TYPING START
+  // -----------------------------
 
-  // Stop typing
-  const emitTypingStop = useCallback((connectionId: string) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('typing_stop', {
-        connectionId,
-      });
-    }
-  }, []);
+  const emitTypingStart = useCallback(
+    (connectionId: string) => {
+      const currentSocket = socketRef.current;
 
-  // Send message
-  const emitSendMessage = useCallback(
-    (connectionId: string, content?: string, imageUrl?: string) => {
-      if (socketRef.current?.connected) {
-        console.log('[Socket] Sending message');
-
-        socketRef.current.emit('send_message', {
-          connectionId,
-          content,
-          imageUrl,
-        });
-      } else {
-        console.warn(
-          '[Socket] Cannot send message - socket not connected'
-        );
+      if (!currentSocket || !currentSocket.connected) {
+        return;
       }
+
+      currentSocket.emit('typing_start', {
+        connectionId,
+      });
     },
     []
   );
 
-  // Mark messages as read
-  const emitMarkRead = useCallback((connectionId: string) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('mark_read', {
+  // -----------------------------
+  // TYPING STOP
+  // -----------------------------
+
+  const emitTypingStop = useCallback(
+    (connectionId: string) => {
+      const currentSocket = socketRef.current;
+
+      if (!currentSocket || !currentSocket.connected) {
+        return;
+      }
+
+      currentSocket.emit('typing_stop', {
         connectionId,
       });
-    }
-  }, []);
+    },
+    []
+  );
+
+  // -----------------------------
+  // SEND MESSAGE
+  // -----------------------------
+
+  const emitSendMessage = useCallback(
+    (
+      connectionId: string,
+      content?: string,
+      imageUrl?: string
+    ) => {
+      const currentSocket = socketRef.current;
+
+      if (!currentSocket || !currentSocket.connected) {
+        console.warn(
+          '[Socket] Cannot send message - socket not connected'
+        );
+        return;
+      }
+
+      console.log(
+        '[Socket] Sending message to:',
+        connectionId
+      );
+
+      currentSocket.emit('send_message', {
+        connectionId,
+        content,
+        imageUrl,
+      });
+    },
+    []
+  );
+
+  // -----------------------------
+  // MARK READ
+  // -----------------------------
+
+  const emitMarkRead = useCallback(
+    (connectionId: string) => {
+      const currentSocket = socketRef.current;
+
+      if (!currentSocket || !currentSocket.connected) {
+        return;
+      }
+
+      currentSocket.emit('mark_read', {
+        connectionId,
+      });
+    },
+    []
+  );
 
   return (
     <SocketContext.Provider
@@ -260,7 +359,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-export const useSocket = () => {
+export const useSocket = (): SocketContextType => {
   const context = useContext(SocketContext);
 
   if (!context) {
