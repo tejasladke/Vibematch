@@ -1,0 +1,6 @@
+{
+  "name": "PlanMate",
+  "description": "Gen-Z activity and social planning platform to create, discover, and join group plans with real-time chat and smart connections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
